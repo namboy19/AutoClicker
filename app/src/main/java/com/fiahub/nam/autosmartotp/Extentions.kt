@@ -1,4 +1,4 @@
-package com.github.nestorm001.autoclicker
+package com.fiahub.nam.autosmartotp
 
 import android.content.Context
 import android.util.Log

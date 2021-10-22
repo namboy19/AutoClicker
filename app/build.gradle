@@ -5,7 +5,7 @@ apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion 28
     defaultConfig {
-        applicationId "com.github.nestorm001.autoclicker"
+        applicationId "com.fiahub.nam.autosmartotp"
         minSdkVersion 24
         targetSdkVersion 28
         versionCode 1
@@ -15,7 +15,6 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            // 移除无用的resource文件
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             zipAlignEnabled true

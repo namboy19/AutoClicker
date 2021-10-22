@@ -1,4 +1,4 @@
-package com.github.nestorm001.autoclicker
+package com.fiahub.nam.autosmartotp
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.annotation.TargetApi
@@ -10,8 +10,8 @@ import android.os.Bundle
 import android.provider.Settings
 import android.support.v7.app.AppCompatActivity
 import android.view.accessibility.AccessibilityManager
-import com.github.nestorm001.autoclicker.service.FloatingClickService
-import com.github.nestorm001.autoclicker.service.autoClickService
+import com.fiahub.nam.autosmartotp.service.FloatingClickService
+import com.fiahub.nam.autosmartotp.service.autoClickService
 import kotlinx.android.synthetic.main.activity_main.*
 
 

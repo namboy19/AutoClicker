@@ -5,4 +5,6 @@
     android:accessibilityFlags="flagDefault"
     android:canPerformGestures="true"
     android:description="@string/accessibility_service_description"
-    android:packageNames="com.github.nestorm001.autoclicker"/>
+    android:canRetrieveWindowContent="true"/>
+
+    <!--android:accessibilityEventTypes="typeViewClicked|typeViewFocused"-->

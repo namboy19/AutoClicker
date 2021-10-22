@@ -1,4 +1,4 @@
-package com.github.nestorm001.autoclicker
+package com.fiahub.nam.autosmartotp
 
 import android.annotation.SuppressLint
 import android.view.MotionEvent
@@ -35,6 +35,7 @@ class TouchAndDragListener(private val params: WindowManager.LayoutParams,
                 initialTouchY = event.rawY
                 return true
             }
+
 
             MotionEvent.ACTION_MOVE -> {
                 if (!isDrag && isDragging(event)) {

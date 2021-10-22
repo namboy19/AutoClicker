@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.github.nestorm001.autoclicker">
+          package="com.fiahub.nam.autosmartotp">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
 
@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".MainActivity"
+            android:name="com.fiahub.nam.autosmartotp.MainActivity"
             android:configChanges="orientation"
             android:launchMode="singleInstance">
             <intent-filter>
@@ -23,7 +23,7 @@
         </activity>
 
         <service
-            android:name=".service.AutoClickService"
+            android:name="com.fiahub.nam.autosmartotp.service.AutoClickService"
             android:label="@string/accessibility_service_name"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -36,7 +36,7 @@
         </service>
 
         <service
-            android:name=".service.FloatingClickService"
+            android:name="com.fiahub.nam.autosmartotp.service.FloatingClickService"
             android:configChanges="orientation"
             android:enabled="true"
             android:exported="false"/>

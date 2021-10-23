@@ -90,7 +90,17 @@ class AutoClickService : AccessibilityService() {
             getNodeInfo(rootInActiveWindow)
         }
 
-        return nodeInfos.firstOrNull()?.packageName == "com.fastacash.tcb"
+        if (nodeInfos.firstOrNull()?.packageName == "android") {
+            /**
+             * try to dissmiss system dialog "App not response"
+             */
+            rootInActiveWindow?.findAccessibilityNodeInfosByViewId("android:id/aerr_close")
+                ?.firstOrNull()?.performAction(AccessibilityNodeInfoCompat.ACTION_CLICK)
+
+            return false
+        } else {
+            return nodeInfos.firstOrNull()?.packageName == "com.fastacash.tcb"
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -104,10 +114,10 @@ class AutoClickService : AccessibilityService() {
         handleScreenChanged()
     }
 
-    private fun onFinishGetOtp(otp: String) {
-        stopGetOtp()
-        onGetOtpCompleted?.invoke(otp)
-    }
+    /* private fun onFinishGetOtp(otp: String) {
+         stopGetOtp()
+         onGetOtpCompleted?.invoke(otp)
+     }*/
 
     private fun dispatchPinUnlockOtp() {
 
@@ -128,6 +138,9 @@ class AutoClickService : AccessibilityService() {
          * wait for editext showed and then set unclock PIN
          */
         Handler().postDelayed({
+
+            if (!isStarted) return@postDelayed
+
             nodeInfos.find { it.className == EditText::class.java.name }?.let {
                 val arguments = Bundle()
                 arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
@@ -140,6 +153,8 @@ class AutoClickService : AccessibilityService() {
              * wait for button enabled after input PIN then perform click
              */
             Handler().postDelayed({
+                if (!isStarted) return@postDelayed
+
                 nodeInfos.find { it.text == "Lấy mã OTP" && it.className == Button::class.java.name }
                     ?.performAction(AccessibilityNodeInfoCompat.ACTION_CLICK)
             }, 200)
@@ -260,6 +275,8 @@ class AutoClickService : AccessibilityService() {
                      * delay time for button enabled
                      */
                     Handler().postDelayed({
+                        if (!isStarted) return@postDelayed
+
                         nodeInfos.find { it.text == "Xác nhận" }
                             ?.performAction(AccessibilityNodeInfoCompat.ACTION_CLICK)
                     }, 100)
@@ -289,7 +306,11 @@ class AutoClickService : AccessibilityService() {
                 /**
                  * wait for keyboard showed and dispatch key press PIN
                  */
-                Handler().postDelayed({ dispatchPinUnlockOtp() }, 1500)
+                Handler().postDelayed({
+                    if (!isStarted) return@postDelayed
+
+                    dispatchPinUnlockOtp()
+                }, 1200)
             }
 
             isGeneratedOtpScreen() && !isLoadedGeneratedOtpScreen -> {
@@ -298,7 +319,8 @@ class AutoClickService : AccessibilityService() {
                 nodeInfos.find { it.text == "Mã OTP của quý khách" }?.let {
 
                     nodeInfos.getOrNull(nodeInfos.indexOf(it) + 1)?.let {
-                        Handler().postDelayed({ onFinishGetOtp(it.text.toString()) }, 300)
+                        stopGetOtp()
+                        onGetOtpCompleted?.invoke(it.text.toString())
                     }
                 }
 

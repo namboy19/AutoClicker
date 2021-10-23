@@ -69,7 +69,38 @@ class FloatingClickService : Service() {
     }
 
     private var isOn = false
+
+    private var restartCallback = Runnable {
+        if (isOn) {
+            autoClickService?.stopGetOtp()
+            startGetOtp()
+        }
+    }
+
+    private val restartHandler = Handler()
+
     private fun viewOnClick() {
+
+        isOn = !isOn
+
+        if (isOn) {
+            startGetOtp()
+        } else {
+            stopGetOtp()
+        }
+        view.findViewById<TextView>(R.id.button).text = if (isOn) "ON" else "OFF"
+    }
+
+    private fun stopGetOtp() {
+        autoClickService?.stopGetOtp()
+        restartHandler.removeCallbacks(restartCallback)
+    }
+
+    private fun startGetOtp() {
+
+        if (!isOn) {
+            return
+        }
 
         if (autoClickService?.isTcbOpening() == false) {
             openAppTcb()
@@ -78,25 +109,20 @@ class FloatingClickService : Service() {
              * wait for tcb app is opened
              */
             Handler().postDelayed({
-                viewOnClick()
+                startGetOtp()
             }, 5000)
-
         } else {
-            isOn = !isOn
 
-            if (isOn) {
-                autoClickService?.startGetOtp("80706224", "1000") {
-                    Toast.makeText(this, it, Toast.LENGTH_LONG).show()
-                    isOn = false
-                    view.findViewById<TextView>(R.id.button).text = "OFF"
-                }
+            autoClickService?.startGetOtp("80706224", "1000") {
 
-            } else {
-                autoClickService?.stopGetOtp()
+                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                isOn = false
+                view.findViewById<TextView>(R.id.button).text = "OFF"
+                restartHandler.removeCallbacks(restartCallback)
             }
 
-            view.findViewById<TextView>(R.id.button).text = if (isOn) "ON" else "OFF"
-
+            restartHandler.removeCallbacks(restartCallback)
+            restartHandler.postDelayed(restartCallback, 15000)
         }
     }
 

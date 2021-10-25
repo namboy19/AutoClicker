@@ -18,21 +18,44 @@ import com.fiahub.nam.autosmartotp.R
 import com.fiahub.nam.autosmartotp.TouchAndDragListener
 import com.fiahub.nam.autosmartotp.dp2px
 import com.fiahub.nam.autosmartotp.logd
+import com.fiahub.nam.autosmartotp.service.api.ApiService
+import com.fiahub.nam.autosmartotp.service.api.PendingTransaction
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 
-/**
- * Created on 2018/9/28.
- * By nesto
- */
 class FloatingClickService : Service() {
     private lateinit var manager: WindowManager
     private lateinit var view: RelativeLayout
     private lateinit var params: WindowManager.LayoutParams
     private var xForRecord = 0
     private var yForRecord = 0
-
     private var startDragDistance: Int = 0
 
+    private var isOn = false
+    private var otpPin = ""
+
+
+    companion object {
+        val POOLING_INTERVAL = 3000L
+        val RESTART_INTERVAL = 15000L
+        val PARAM_UNLOCK_OTP_PIN = "PARAM_UNLOCK_OTP_PIN"
+
+        fun start(context: Context, pin: String) {
+            context.startService(Intent(context, FloatingClickService::class.java).apply {
+                putExtra(PARAM_UNLOCK_OTP_PIN, pin)
+            })
+
+        }
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        otpPin = intent?.getStringExtra(PARAM_UNLOCK_OTP_PIN) ?: ""
+        return super.onStartCommand(intent, flags, startId)
+    }
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -40,6 +63,7 @@ class FloatingClickService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+
         startDragDistance = dp2px(10f)
         view = LayoutInflater.from(this).inflate(R.layout.widget, null) as RelativeLayout
 
@@ -60,7 +84,16 @@ class FloatingClickService : Service() {
 
         //adding an touchlistener to make drag movement of the floating widget
         view.setOnTouchListener(TouchAndDragListener(params, startDragDistance,
-            { viewOnClick() },
+            {
+                isOn = !isOn
+
+                if (isOn) {
+                    startGetOtp()
+                } else {
+                    stopGetOtp()
+                }
+                view.findViewById<TextView>(R.id.button).text = if (isOn) "ON" else "OFF"
+            },
             { manager.updateViewLayout(view, params) }))
 
         //getting windows services and adding the floating view to it
@@ -68,32 +101,14 @@ class FloatingClickService : Service() {
         manager.addView(view, params)
     }
 
-    private var isOn = false
+
+    private val restartHandler = Handler()
 
     private var restartCallback = Runnable {
         if (isOn) {
             autoClickService?.stopGetOtp()
             startGetOtp()
         }
-    }
-
-    private val restartHandler = Handler()
-
-    private fun viewOnClick() {
-
-        isOn = !isOn
-
-        if (isOn) {
-            startGetOtp()
-        } else {
-            stopGetOtp()
-        }
-        view.findViewById<TextView>(R.id.button).text = if (isOn) "ON" else "OFF"
-    }
-
-    private fun stopGetOtp() {
-        autoClickService?.stopGetOtp()
-        restartHandler.removeCallbacks(restartCallback)
     }
 
     private fun startGetOtp() {
@@ -112,18 +127,14 @@ class FloatingClickService : Service() {
                 startGetOtp()
             }, 5000)
         } else {
-
-            autoClickService?.startGetOtp("80706224", "1000") {
-
-                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
-                isOn = false
-                view.findViewById<TextView>(R.id.button).text = "OFF"
-                restartHandler.removeCallbacks(restartCallback)
-            }
-
-            restartHandler.removeCallbacks(restartCallback)
-            restartHandler.postDelayed(restartCallback, 15000)
+            pendingTransactionJob.run()
         }
+    }
+
+    private fun stopGetOtp() {
+        autoClickService?.stopGetOtp()
+        restartHandler.removeCallbacks(restartCallback)
+        pendingTransactionHandler.removeCallbacks(pendingTransactionJob)
     }
 
     private fun openAppTcb() {
@@ -160,5 +171,45 @@ class FloatingClickService : Service() {
         xForRecord = x
         yForRecord = y
         manager.updateViewLayout(view, params)
+    }
+
+    private val pendingTransactionHandler = Handler()
+
+    private val pendingTransactionJob = Runnable {
+
+        ApiService.apiService.getPendingTransaction().observeOn(AndroidSchedulers.mainThread())
+            .subscribeOn(Schedulers.io()).subscribe({
+
+                it.transID.takeIf { !it.isNullOrEmpty() }?.also {
+                    onGetTransIDSuccess(it)
+                } ?: kotlin.run {
+                    onGetTransIDFailed()
+                }
+
+            }, {
+                it.printStackTrace()
+                onGetTransIDFailed()
+            })
+    }
+
+    private fun onGetTransIDSuccess(transID: String) {
+        autoClickService?.startGetOtp(transID, otpPin, ::onGetSmartOtpSuccess)
+
+        restartHandler.removeCallbacks(restartCallback)
+        restartHandler.postDelayed(restartCallback, RESTART_INTERVAL)
+
+        pendingTransactionHandler.removeCallbacks(pendingTransactionJob)
+    }
+
+    private fun onGetTransIDFailed() {
+        pendingTransactionHandler.postDelayed(pendingTransactionJob, POOLING_INTERVAL)
+    }
+
+    private fun onGetSmartOtpSuccess(otp: String) {
+        Toast.makeText(this, otp, Toast.LENGTH_LONG).show()
+
+        restartHandler.removeCallbacks(restartCallback)
+
+        pendingTransactionJob.run()
     }
 }

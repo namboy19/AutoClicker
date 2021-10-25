@@ -19,14 +19,6 @@ fun Any.logd(tag: String = TAG) {
     }
 }
 
-fun Any.loge(tag: String = TAG) {
-    if (!BuildConfig.DEBUG) return
-    if (this is String) {
-        Log.e(tag, this)
-    } else {
-        Log.e(tag, this.toString())
-    }
-}
 
 fun Context.dp2px(dpValue: Float): Int {
     val scale = resources.displayMetrics.density

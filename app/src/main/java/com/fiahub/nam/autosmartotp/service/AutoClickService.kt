@@ -114,11 +114,6 @@ class AutoClickService : AccessibilityService() {
         handleScreenChanged()
     }
 
-    /* private fun onFinishGetOtp(otp: String) {
-         stopGetOtp()
-         onGetOtpCompleted?.invoke(otp)
-     }*/
-
     private fun dispatchPinUnlockOtp() {
 
         listKeyBoardLocation.find { it.first == 5 }?.let {

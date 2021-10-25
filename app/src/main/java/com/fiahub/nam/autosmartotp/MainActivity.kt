@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.support.v7.app.AppCompatActivity
 import android.view.accessibility.AccessibilityManager
+import android.widget.Toast
 import com.fiahub.nam.autosmartotp.service.FloatingClickService
 import com.fiahub.nam.autosmartotp.service.autoClickService
 import kotlinx.android.synthetic.main.activity_main.*
@@ -25,15 +26,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         button.setOnClickListener {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N
-                    || Settings.canDrawOverlays(this)) {
-                serviceIntent = Intent(this@MainActivity,
-                        FloatingClickService::class.java)
-                startService(serviceIntent)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || Settings.canDrawOverlays(this)) {
+
+                FloatingClickService.start(this, edtPin.text.toString())
+
                 onBackPressed()
             } else {
                 askPermission()
-                shortToast("You need System Alert Window Permission to do this")
+                Toast.makeText(this,
+                    "You need System Alert Window Permission to do this",
+                    Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -41,7 +43,8 @@ class MainActivity : AppCompatActivity() {
     private fun checkAccess(): Boolean {
         val string = getString(R.string.accessibility_service_id)
         val manager = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
-        val list = manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC)
+        val list =
+            manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC)
         for (id in list) {
             if (string == id.id) {
                 return true
@@ -58,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && !Settings.canDrawOverlays(this)) {
+            && !Settings.canDrawOverlays(this)) {
             askPermission()
         }
     }
@@ -66,15 +69,14 @@ class MainActivity : AppCompatActivity() {
     @TargetApi(Build.VERSION_CODES.M)
     private fun askPermission() {
         val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName"))
+            Uri.parse("package:$packageName"))
         startActivityForResult(intent, PERMISSION_CODE)
     }
 
     override fun onDestroy() {
-        serviceIntent?.let {
-            "stop floating click service".logd()
-            stopService(it)
-        }
+
+        stopService(Intent(this@MainActivity, FloatingClickService::class.java))
+
         autoClickService?.let {
             "stop auto click service".logd()
             it.stopSelf()
